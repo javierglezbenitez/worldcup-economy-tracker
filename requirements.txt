@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+pydantic
+sqlalchemy
+aiosqlite
+requests
+yfinance
+pytrends
+spacy
+textblob
+apscheduler
+python-dotenv
+loguru
+httpx
+pytest
+pytest-asyncio
