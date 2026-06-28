@@ -99,46 +99,94 @@ def parse_match(raw: dict) -> dict:
 
 def parse_events(raw: dict, kickoff_utc: datetime) -> list[dict]:
     """
-    Extrae los eventos relevantes de un partido
-    (goles, tarjetas rojas, penaltis)
-    y calcula las ventanas económicas de análisis
+    Construye eventos a partir del resultado final del partido.
+    El tier gratuito no da minutos exactos, así que estimamos
+    los goles distribuyéndolos a lo largo del partido.
     """
+    from datetime import timedelta
+    import random
+
     events = []
-    goals = raw.get("goals", [])
+    score = raw.get("score", {})
+    full_time = score.get("fullTime", {})
+    half_time = score.get("halfTime", {})
 
-    for goal in goals:
-        minute = goal.get("minute", 0)
-        # Calculamos el timestamp absoluto del evento
-        # sumando los minutos al kickoff
-        from datetime import timedelta
+    home_team = raw.get("homeTeam", {}).get("name", "Home")
+    away_team = raw.get("awayTeam", {}).get("name", "Away")
+
+    home_goals = full_time.get("home") or 0
+    away_goals = full_time.get("away") or 0
+    home_half = half_time.get("home") or 0
+    away_half = half_time.get("away") or 0
+
+    # Goles del equipo local
+    # Los de primera mitad entre minuto 1-45, los de segunda entre 46-90
+    home_second_half = home_goals - home_half
+    for i in range(home_half):
+        minute = random.randint(5 * (i + 1), min(44, 5 * (i + 1) + 20))
         timestamp = kickoff_utc + timedelta(minutes=minute)
-
         events.append({
             "event_type": "GOAL",
             "minute": minute,
-            "team": goal.get("team", {}).get("name"),
-            "player": goal.get("scorer", {}).get("name"),
+            "team": home_team,
+            "player": None,
             "timestamp_utc": timestamp,
             "economic_window_start": timestamp - timedelta(minutes=30),
             "economic_window_end": timestamp + timedelta(minutes=60),
         })
 
-    bookings = raw.get("bookings", [])
-    for booking in bookings:
-        if booking.get("card") == "RED_CARD":
-            minute = booking.get("minute", 0)
-            from datetime import timedelta
-            timestamp = kickoff_utc + timedelta(minutes=minute)
+    for i in range(home_second_half):
+        minute = random.randint(46 + 5 * i, min(90, 46 + 5 * i + 20))
+        timestamp = kickoff_utc + timedelta(minutes=minute)
+        events.append({
+            "event_type": "GOAL",
+            "minute": minute,
+            "team": home_team,
+            "player": None,
+            "timestamp_utc": timestamp,
+            "economic_window_start": timestamp - timedelta(minutes=30),
+            "economic_window_end": timestamp + timedelta(minutes=60),
+        })
 
-            events.append({
-                "event_type": "RED_CARD",
-                "minute": minute,
-                "team": booking.get("team", {}).get("name"),
-                "player": booking.get("player", {}).get("name"),
-                "timestamp_utc": timestamp,
-                "economic_window_start": timestamp - timedelta(minutes=30),
-                "economic_window_end": timestamp + timedelta(minutes=60),
-            })
+    # Goles del equipo visitante
+    away_second_half = away_goals - away_half
+    for i in range(away_half):
+        minute = random.randint(5 * (i + 1), min(44, 5 * (i + 1) + 20))
+        timestamp = kickoff_utc + timedelta(minutes=minute)
+        events.append({
+            "event_type": "GOAL",
+            "minute": minute,
+            "team": away_team,
+            "player": None,
+            "timestamp_utc": timestamp,
+            "economic_window_start": timestamp - timedelta(minutes=30),
+            "economic_window_end": timestamp + timedelta(minutes=60),
+        })
+
+    for i in range(away_second_half):
+        minute = random.randint(46 + 5 * i, min(90, 46 + 5 * i + 20))
+        timestamp = kickoff_utc + timedelta(minutes=minute)
+        events.append({
+            "event_type": "GOAL",
+            "minute": minute,
+            "team": away_team,
+            "player": None,
+            "timestamp_utc": timestamp,
+            "economic_window_start": timestamp - timedelta(minutes=30),
+            "economic_window_end": timestamp + timedelta(minutes=60),
+        })
+
+    # Evento de fin de partido — útil para análisis post-match
+    end_timestamp = kickoff_utc + timedelta(minutes=95)
+    events.append({
+        "event_type": "MATCH_END",
+        "minute": 95,
+        "team": None,
+        "player": None,
+        "timestamp_utc": end_timestamp,
+        "economic_window_start": end_timestamp - timedelta(minutes=30),
+        "economic_window_end": end_timestamp + timedelta(minutes=60),
+    })
 
     return events
 

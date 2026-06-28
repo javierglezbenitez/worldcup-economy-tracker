@@ -14,3 +14,5 @@ loguru
 httpx
 pytest
 pytest-asyncio
+scipy
+numpy
