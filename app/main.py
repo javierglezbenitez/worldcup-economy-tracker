@@ -30,7 +30,8 @@ from app.services.correlation_service import (
     get_correlations_summary
 )
 from app.scheduler.scheduler import start_scheduler, stop_scheduler
-
+from app.services.llm_service import chat as llm_chat
+from pydantic import BaseModel
 
 # ─────────────────────────────────────────
 # LIFESPAN — arranque y cierre de la app
@@ -217,3 +218,19 @@ def manual_sync(db: Session = Depends(get_db)):
         "news_synced": news,
         "correlations_calculated": correlations,
     }
+
+
+
+class ChatRequest(BaseModel):
+    message: str
+    history: list[dict] = []
+
+@app.post("/chat")
+def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
+    """Endpoint del agente conversacional con contexto del Mundial"""
+    response = llm_chat(
+        db=db,
+        messages=request.history,
+        user_message=request.message
+    )
+    return {"response": response}

@@ -7,6 +7,9 @@ class Settings(BaseSettings):
     FOOTBALL_API_KEY: str
     NEWS_API_KEY: str
 
+    # Añadir después de NEWS_API_KEY
+    GROQ_API_KEY: str
+
     # Base de datos
     DATABASE_URL: str = "sqlite:///./data/mundial2026.db"
 
