@@ -5,7 +5,8 @@ import plotly.express as px
 import pandas as pd
 from datetime import datetime
 
-API_URL = "http://127.0.0.1:8000"
+import streamlit as st
+API_URL = st.secrets.get("API_URL", "http://127.0.0.1:8000")
 
 st.set_page_config(
     page_title="Sponsors — World Cup Economy Tracker",

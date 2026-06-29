@@ -5,7 +5,8 @@ import plotly.express as px
 import pandas as pd
 import json
 
-API_URL = "http://127.0.0.1:8000"
+import streamlit as st
+API_URL = st.secrets.get("API_URL", "http://127.0.0.1:8000")
 
 st.set_page_config(
     page_title="Sentimiento — World Cup Economy Tracker",
