@@ -106,6 +106,7 @@ def parse_article(article: dict, category: str) -> dict | None:
 
     return {
         "headline": headline[:500],  # Limitamos longitud
+        "url": article.get("url"),        # ← añadir esta línea
         "source": article.get("source", {}).get("name", "Unknown"),
         "category": category,
         "sentiment_score": sentiment,

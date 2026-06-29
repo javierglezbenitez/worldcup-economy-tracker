@@ -115,6 +115,7 @@ class NewsSentiment(Base):
     id = Column(Integer, primary_key=True, index=True)
     match_id = Column(Integer, ForeignKey("matches.id"), nullable=True)
     headline = Column(String, nullable=False)
+    url = Column(String, nullable=True)
     source = Column(String)
     category = Column(String)          # FINANCIAL, SPORTS, ADVERTISING, TOURISM
     sentiment_score = Column(Float)    # -1.0 a 1.0

@@ -53,26 +53,29 @@ st.subheader("📈 Sponsors en tiempo real")
 
 try:
     snapshots = requests.get(f"{API_URL}/stocks/snapshots", timeout=5).json()
-    cols = st.columns(len(snapshots))
-    for i, stock in enumerate(snapshots):
-        with cols[i]:
-            trend = stock["trend"]
-            color = "#2EA043" if trend == "UP" else "#F85149" if trend == "DOWN" else "#8B949E"
-            arrow = "▲" if trend == "UP" else "▼" if trend == "DOWN" else "●"
-            st.markdown(f"""
-            <div style="
-                background: #161B22;
-                border: 1px solid #30363D;
-                border-radius: 10px;
-                padding: 12px;
-                text-align: center;
-            ">
-                <div style="color: #8B949E; font-size: 11px;">{stock['ticker']}</div>
-                <div style="font-size: 13px; font-weight: bold;">{stock['company_name']}</div>
-                <div style="font-size: 20px; font-weight: bold;">${stock['price']:.2f}</div>
-                <div style="color: {color};">{arrow} {stock['change_pct']:+.2f}%</div>
-            </div>
-            """, unsafe_allow_html=True)
+    if not snapshots:
+        st.info("Cargando datos de sponsors...")
+    else:
+        cols = st.columns(len(snapshots))
+        for i, stock in enumerate(snapshots):
+            with cols[i]:
+                trend = stock["trend"]
+                color = "#2EA043" if trend == "UP" else "#F85149" if trend == "DOWN" else "#8B949E"
+                arrow = "▲" if trend == "UP" else "▼" if trend == "DOWN" else "●"
+                st.markdown(f"""
+                <div style="
+                    background: #161B22;
+                    border: 1px solid #30363D;
+                    border-radius: 10px;
+                    padding: 12px;
+                    text-align: center;
+                ">
+                    <div style="color: #8B949E; font-size: 11px;">{stock['ticker']}</div>
+                    <div style="font-size: 13px; font-weight: bold;">{stock['company_name']}</div>
+                    <div style="font-size: 20px; font-weight: bold;">${stock['price']:.2f}</div>
+                    <div style="color: {color};">{arrow} {stock['change_pct']:+.2f}%</div>
+                </div>
+                """, unsafe_allow_html=True)
 except Exception as e:
     st.warning(f"No se pudieron cargar los stocks: {e}")
 
