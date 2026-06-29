@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Optional
-
+from fastapi.responses import JSONResponse
 from app.core.logger import logger
 from app.core.config import settings
 from app.models.database import get_db, init_db, Match, MatchEvent, StockSnapshot, NewsSentiment
@@ -234,3 +234,9 @@ def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
         user_message=request.message
     )
     return {"response": response}
+
+
+@app.head("/health")
+def health_head():
+    """HEAD request para UptimeRobot"""
+    return JSONResponse(content={}, status_code=200)
