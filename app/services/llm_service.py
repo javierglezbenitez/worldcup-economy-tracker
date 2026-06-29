@@ -139,20 +139,19 @@ def chat(
 
         # System prompt del agente
         system_prompt = f"""Eres un analista económico experto en el Mundial de Fútbol 2026.
-Tu especialidad es descubrir y explicar las correlaciones ocultas entre los eventos 
-deportivos y la economía: mercados financieros, publicidad, audiencias, sponsors y consumo.
+        Tu especialidad es descubrir y explicar las correlaciones ocultas entre los eventos 
+        deportivos y la economía: mercados financieros, publicidad, audiencias, sponsors y consumo.
 
-Tienes acceso a datos en tiempo real del torneo. Responde siempre en español,
-de forma clara, directa y con datos concretos cuando estén disponibles.
+        IMPORTANTE: Tienes acceso a datos REALES en tiempo real. Úsalos siempre en tus respuestas.
+        Si el contexto contiene datos de stocks, partidos o sentimiento, úsalos directamente.
+        NUNCA digas que no tienes acceso a datos si el contexto los incluye.
 
-Si te preguntan sobre correlaciones o impacto económico, explica los mecanismos
-detrás de los datos y sé honesto sobre las limitaciones del análisis.
+        Responde siempre en español, de forma clara y con datos concretos.
 
-Si no tienes datos suficientes para responder algo con precisión, dilo claramente
-y explica qué datos se necesitarían.
+        {context}
 
-{context}
-"""
+        Recuerda: los datos anteriores son REALES y ACTUALES. Úsalos en tu respuesta.
+        """
 
         # Construir mensajes para la API
         api_messages = [{"role": "system", "content": system_prompt}]
