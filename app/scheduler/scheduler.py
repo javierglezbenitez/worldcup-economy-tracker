@@ -8,6 +8,7 @@ from app.scheduler.jobs import (
     job_sync_news,
     job_sync_stocks_idle,
     job_calculate_correlations,
+    job_detect_live_matches
 )
 
 scheduler = BackgroundScheduler()
@@ -25,6 +26,15 @@ def start_scheduler():
         trigger=IntervalTrigger(minutes=30),
         id="sync_matches",
         name="Sincronizar partidos",
+        replace_existing=True,
+    )
+
+    # Detectar partidos en vivo cada 2 minutos (evita perder partidos cortos entre syncs largos)
+    scheduler.add_job(
+        job_detect_live_matches,
+        trigger=IntervalTrigger(minutes=2),
+        id="detect_live_matches",
+        name="Detectar partidos en vivo",
         replace_existing=True,
     )
 
@@ -65,8 +75,7 @@ def start_scheduler():
     )
 
     scheduler.start()
-    logger.info("✅ Scheduler arrancado con 5 jobs activos")
-
+    logger.info("✅ Scheduler arrancado con 6 jobs activos")
 
 def stop_scheduler():
     """Para el scheduler limpiamente al cerrar la app"""

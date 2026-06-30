@@ -102,3 +102,20 @@ def job_calculate_correlations():
         logger.error(f"🔬 [JOB] Error calculando correlaciones: {e}")
     finally:
         db.close()
+
+def job_detect_live_matches():
+    """
+    Comprueba el estado real de los partidos en la API cada 2 minutos
+    y actualiza la BD si alguno ha pasado a LIVE o ha cambiado de estado.
+    Esto evita perder la ventana de partidos que empiezan y acaban
+    entre sincronizaciones largas.
+    """
+    logger.info("👀 [JOB] Comprobando cambios de estado de partidos...")
+    db = SessionLocal()
+    try:
+        count = sync_matches(db)
+        logger.info(f"👀 [JOB] Estados revisados, {count} partidos procesados")
+    except Exception as e:
+        logger.error(f"👀 [JOB] Error comprobando estados: {e}")
+    finally:
+        db.close()
