@@ -28,7 +28,7 @@ def sync_matches(db: Session) -> int:
             continue
 
         # Saltar partidos sin equipos definidos todavía (fases eliminatorias pendientes)
-        if not parsed.get("home_team") or not parsed.get("away_team"):
+        # if not parsed.get("home_team") or not parsed.get("away_team"):
             logger.debug(f"Partido {parsed.get('external_id')} sin equipos definidos, omitiendo")
             continue
 

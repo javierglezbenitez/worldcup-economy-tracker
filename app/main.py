@@ -240,3 +240,23 @@ def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
 def health_head():
     """HEAD request para UptimeRobot"""
     return JSONResponse(content={}, status_code=200)
+
+
+@app.get("/bracket")
+def get_bracket(db: Session = Depends(get_db)):
+    """Devuelve todos los partidos de eliminatorias agrupados por fase"""
+    knockout_stages = ["LAST_32", "LAST_16", "QUARTER_FINALS", "SEMI_FINALS", "THIRD_PLACE", "FINAL"]
+    matches = db.query(Match).filter(Match.stage.in_(knockout_stages)).order_by(Match.kickoff_utc).all()
+
+    bracket = {stage: [] for stage in knockout_stages}
+    for m in matches:
+        bracket[m.stage].append({
+            "id": m.id,
+            "home_team": m.home_team,
+            "away_team": m.away_team,
+            "home_score": m.home_score,
+            "away_score": m.away_score,
+            "status": m.status,
+            "kickoff_utc": m.kickoff_utc,
+        })
+    return bracket

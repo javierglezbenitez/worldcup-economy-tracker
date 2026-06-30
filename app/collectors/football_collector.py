@@ -83,8 +83,8 @@ def parse_match(raw: dict) -> dict:
 
     return {
         "external_id": raw.get("id"),
-        "home_team": home.get("name", "Unknown"),
-        "away_team": away.get("name", "Unknown"),
+        "home_team": home.get("name") or "TBD",
+        "away_team": away.get("name") or "TBD",
         "home_score": full_time.get("home"),
         "away_score": full_time.get("away"),
         "stage": raw.get("stage"),
