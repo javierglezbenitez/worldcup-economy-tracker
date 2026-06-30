@@ -212,11 +212,23 @@ def manual_sync(db: Session = Depends(get_db)):
     matches = sync_matches(db)
     stocks = sync_stock_snapshots(db)
     news = sync_news(db)
+
+    # Sincronizar eventos de todos los partidos relevantes
+    from app.models.database import Match
+    from app.services.football_service import sync_match_events
+    all_matches = db.query(Match).filter(
+        Match.status.in_(["FINISHED", "IN_PLAY", "PAUSED"])
+    ).all()
+    events_total = sum(
+        sync_match_events(db, m.id, m.external_id) for m in all_matches
+    )
+
     correlations = run_all_correlations(db)
     return {
         "matches_synced": matches,
         "stocks_synced": stocks,
         "news_synced": news,
+        "events_synced": events_total,
         "correlations_calculated": correlations,
     }
 
@@ -309,3 +321,26 @@ def get_timeline(db: Session = Depends(get_db)):
     # Ordenar todo cronológicamente, más reciente primero
     timeline.sort(key=lambda x: x["timestamp"], reverse=True)
     return timeline[:8]
+
+
+@app.post("/admin/sync-all-events")
+def sync_all_events(db: Session = Depends(get_db)):
+    """Sincroniza eventos de TODOS los partidos finalizados o en curso"""
+    from app.models.database import Match
+    from app.services.football_service import sync_match_events
+
+    matches = db.query(Match).filter(
+        Match.status.in_(["FINISHED", "IN_PLAY", "PAUSED"])
+    ).all()
+
+    total_events = 0
+    processed = 0
+    for match in matches:
+        events = sync_match_events(db, match.id, match.external_id)
+        total_events += events
+        processed += 1
+
+    return {
+        "matches_processed": processed,
+        "total_events_synced": total_events
+    }
