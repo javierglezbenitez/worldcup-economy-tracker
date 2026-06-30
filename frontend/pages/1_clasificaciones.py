@@ -3,8 +3,7 @@ import requests
 import plotly.express as px
 import pandas as pd
 
-import streamlit as st
-API_URL = st.secrets.get("API_URL", "http://127.0.0.1:8000")
+API_URL = "http://127.0.0.1:8000"
 
 st.set_page_config(
     page_title="Clasificaciones — World Cup Economy Tracker",
@@ -17,8 +16,92 @@ st.markdown("Clasificaciones en tiempo real de los 12 grupos del Mundial 2026")
 st.divider()
 
 # ─────────────────────────────────────────
-# CARGAR DATOS
+# BRACKET DE ELIMINATORIAS  ← AQUÍ AL PRINCIPIO
 # ─────────────────────────────────────────
+st.markdown("### 🏆 Cuadro de eliminatorias")
+st.markdown("Cruces desde dieciseisavos hasta la final. Se completan automáticamente a medida que avanza el torneo.")
+
+@st.cache_data(ttl=300)
+def load_bracket():
+    try:
+        return requests.get(f"{API_URL}/bracket", timeout=5).json()
+    except Exception:
+        return {}
+
+bracket = load_bracket()
+
+STAGE_LABELS = {
+    "LAST_32": "Dieciseisavos",
+    "LAST_16": "Octavos",
+    "QUARTER_FINALS": "Cuartos",
+    "SEMI_FINALS": "Semifinales",
+    "THIRD_PLACE": "3er puesto",
+    "FINAL": "Final",
+}
+
+if not bracket:
+    st.info("Cuadro de eliminatorias no disponible todavía.")
+else:
+    columns_html = ""
+    for stage_key, stage_label in STAGE_LABELS.items():
+        matches = bracket.get(stage_key, [])
+        if not matches:
+            continue
+        matches_html = ""
+        for m in matches:
+            home = m.get("home_team", "TBD")
+            away = m.get("away_team", "TBD")
+            h_score = m.get("home_score")
+            a_score = m.get("away_score")
+            home_winner = h_score is not None and a_score is not None and h_score > a_score
+            away_winner = h_score is not None and a_score is not None and a_score > h_score
+            home_color = "#2EA043" if home_winner else "#8B949E" if home == "TBD" else "white"
+            away_color = "#2EA043" if away_winner else "#8B949E" if away == "TBD" else "white"
+            home_score_str = h_score if h_score is not None else ""
+            away_score_str = a_score if a_score is not None else ""
+            matches_html += f"""
+            <div style="
+                background: #161B22;
+                border: 1px solid #30363D;
+                border-radius: 8px;
+                padding: 10px 12px;
+                margin-bottom: 16px;
+                min-width: 180px;
+            ">
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0;">
+                    <span style="color:{home_color}; font-size:13px; font-weight:{'bold' if home_winner else 'normal'};">{home}</span>
+                    <span style="color:#E8C84A; font-weight:bold; font-size:13px;">{home_score_str}</span>
+                </div>
+                <div style="height:1px; background:#30363D; margin:2px 0;"></div>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0;">
+                    <span style="color:{away_color}; font-size:13px; font-weight:{'bold' if away_winner else 'normal'};">{away}</span>
+                    <span style="color:#E8C84A; font-weight:bold; font-size:13px;">{away_score_str}</span>
+                </div>
+            </div>
+            """
+        columns_html += f"""
+        <div style="min-width: 200px; margin-right: 24px;">
+            <div style="
+                color: #E8C84A;
+                font-weight: bold;
+                font-size: 14px;
+                text-align: center;
+                margin-bottom: 12px;
+                border-bottom: 2px solid #E8C84A;
+                padding-bottom: 6px;
+            ">{stage_label}</div>
+            {matches_html}
+        </div>
+        """
+    st.markdown(f"""
+    <div style="display: flex; overflow-x: auto; padding: 16px 0; gap: 0;">
+        {columns_html}
+    </div>
+    """, unsafe_allow_html=True)
+    st.caption("🟢 Verde = equipo que avanzó · ⚪ Gris = por determinar")
+
+st.divider()
+
 @st.cache_data(ttl=300)  # Cache 5 minutos
 def load_standings():
     try:
