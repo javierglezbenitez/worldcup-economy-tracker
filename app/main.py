@@ -261,3 +261,51 @@ def get_bracket(db: Session = Depends(get_db)):
             "kickoff_utc": m.kickoff_utc,
         })
     return bracket
+
+@app.get("/headline")
+def get_headline(db: Session = Depends(get_db)):
+    """Titular económico del día generado por IA"""
+    from app.services.llm_service import generate_daily_headline
+    return {"headline": generate_daily_headline(db)}
+
+@app.get("/timeline")
+def get_timeline(db: Session = Depends(get_db)):
+    """
+    Mezcla los últimos hitos deportivos y económicos
+    en orden cronológico para la portada.
+    """
+    from app.models.database import MatchEvent, NewsSentiment, Match
+    import json
+
+    timeline = []
+
+    # Últimos eventos de partidos (goles)
+    events = db.query(MatchEvent).filter(
+        MatchEvent.event_type == "GOAL"
+    ).order_by(MatchEvent.timestamp_utc.desc()).limit(5).all()
+
+    for e in events:
+        match = db.query(Match).filter(Match.id == e.match_id).first()
+        if match:
+            timeline.append({
+                "type": "goal",
+                "timestamp": e.timestamp_utc,
+                "text": f"⚽ Gol de {e.team} — {match.home_team} {match.home_score}-{match.away_score} {match.away_team}",
+            })
+
+    # Últimas noticias relevantes
+    news = db.query(NewsSentiment).order_by(
+        NewsSentiment.timestamp_utc.desc()
+    ).limit(5).all()
+
+    for n in news:
+        icon = "🟢" if n.sentiment_score > 0.1 else "🔴" if n.sentiment_score < -0.1 else "⚪"
+        timeline.append({
+            "type": "news",
+            "timestamp": n.timestamp_utc,
+            "text": f"{icon} {n.headline[:90]} — {n.source}",
+        })
+
+    # Ordenar todo cronológicamente, más reciente primero
+    timeline.sort(key=lambda x: x["timestamp"], reverse=True)
+    return timeline[:8]

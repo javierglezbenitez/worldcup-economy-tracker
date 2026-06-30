@@ -83,6 +83,38 @@ def _format_matches(matches: list) -> str:
         )
     return "\n".join(lines)
 
+def generate_daily_headline(db: Session) -> str:
+    """
+    Genera un titular tipo prensa económica con el dato más
+    relevante del momento (último partido + mayor movimiento en bolsa).
+    """
+    try:
+        context = build_context(db)
+
+        prompt = f"""Basándote en estos datos del Mundial 2026, escribe UN SOLO titular 
+de prensa económica, estilo Financial Times o Expansión. Debe conectar un evento 
+deportivo reciente con su posible impacto económico (sponsors, bolsa, sentimiento).
+
+Máximo 20 palabras. Sin comillas. Sin punto final. En español. 
+Solo el titular, nada más.
+
+{context}
+"""
+
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=60,
+            temperature=0.8,
+        )
+
+        headline = response.choices[0].message.content.strip().strip('"')
+        logger.info(f"Titular generado: {headline}")
+        return headline
+
+    except Exception as e:
+        logger.error(f"Error generando titular: {e}")
+        return "El Mundial 2026 continúa moviendo mercados y emociones por igual"
 
 def _format_stocks(stocks: list) -> str:
     if not stocks:
