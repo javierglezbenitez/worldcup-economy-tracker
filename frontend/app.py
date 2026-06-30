@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
+from datetime import datetime
 
-import streamlit as st
 API_URL = st.secrets.get("API_URL", "http://127.0.0.1:8000")
 
 st.set_page_config(
@@ -10,6 +10,15 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+COLORS = {
+    "gold": "#E8C84A",
+    "green": "#2EA043",
+    "red": "#F85149",
+    "gray": "#8B949E",
+    "bg": "#0D1117",
+    "card": "#161B22",
+}
 
 # ─────────────────────────────────────────
 # HEADER
@@ -23,10 +32,92 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# ─────────────────────────────────────────
+# TITULAR DEL DÍA (IA)
+# ─────────────────────────────────────────
+@st.cache_data(ttl=900)  # 15 minutos
+def load_headline():
+    try:
+        return requests.get(f"{API_URL}/headline", timeout=20).json().get("headline", "")
+    except Exception:
+        return ""
+
+headline = load_headline()
+
+if headline:
+    st.markdown(f"""
+    <div style="
+        background: linear-gradient(135deg, #161B22 0%, #1c2230 100%);
+        border-left: 4px solid {COLORS['gold']};
+        border-radius: 12px;
+        padding: 24px 28px;
+        margin: 12px 0 24px 0;
+    ">
+        <div style="color: {COLORS['gold']}; font-size: 11px; font-weight: bold; letter-spacing: 1px; margin-bottom: 8px;">
+            📰 TITULAR DEL MOMENTO · ANALISTA IA
+        </div>
+        <div style="color: white; font-size: 22px; font-weight: bold; line-height: 1.4;">
+            {headline}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
 st.divider()
 
 # ─────────────────────────────────────────
-# MÉTRICAS RÁPIDAS
+# TIMELINE NARRATIVO
+# ─────────────────────────────────────────
+st.markdown("### 🕐 Línea temporal — Fútbol y economía en tiempo real")
+st.caption("Los últimos hitos deportivos y económicos, mezclados en orden cronológico")
+
+@st.cache_data(ttl=120)  # 2 minutos
+def load_timeline():
+    try:
+        return requests.get(f"{API_URL}/timeline", timeout=10).json()
+    except Exception:
+        return []
+
+timeline = load_timeline()
+
+if not timeline:
+    st.info("⏳ Aún no hay suficientes hitos para construir la línea temporal.")
+else:
+    for item in timeline:
+        item_type = item.get("type", "")
+        text = item.get("text", "")
+        timestamp = item.get("timestamp", "")
+
+        try:
+            dt = datetime.fromisoformat(str(timestamp).replace("Z", "+00:00"))
+            time_str = dt.strftime("%d %b — %H:%M UTC")
+        except Exception:
+            time_str = ""
+
+        border_color = COLORS["green"] if item_type == "goal" else COLORS["gray"]
+
+        st.markdown(f"""
+        <div style="
+            display: flex;
+            align-items: flex-start;
+            margin: 4px 0;
+            padding: 12px 16px;
+            background: {COLORS['card']};
+            border-left: 3px solid {border_color};
+            border-radius: 6px;
+        ">
+            <div style="flex: 1;">
+                <span style="font-size: 14px;">{text}</span>
+            </div>
+            <div style="color: {COLORS['gray']}; font-size: 11px; white-space: nowrap; margin-left: 16px;">
+                {time_str}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+st.divider()
+
+# ─────────────────────────────────────────
+# MÉTRICAS RÁPIDAS (compactas, debajo del timeline)
 # ─────────────────────────────────────────
 try:
     health = requests.get(f"{API_URL}/health", timeout=5).json()
@@ -42,98 +133,8 @@ try:
         st.metric("📰 Noticias", health["news_count"])
 
 except Exception:
-    st.error("⚠️ No se puede conectar con el backend. Asegúrate de que FastAPI está corriendo.")
+    st.error("⚠️ No se puede conectar con el backend. Asegúrate de que está corriendo.")
     st.stop()
-
-st.divider()
-
-# ─────────────────────────────────────────
-# RESUMEN DE SPONSORS
-# ─────────────────────────────────────────
-st.subheader("📈 Sponsors en tiempo real")
-
-try:
-    snapshots = requests.get(f"{API_URL}/stocks/snapshots", timeout=5).json()
-    if not snapshots:
-        st.info("Cargando datos de sponsors...")
-    else:
-        cols = st.columns(len(snapshots))
-        for i, stock in enumerate(snapshots):
-            with cols[i]:
-                trend = stock["trend"]
-                color = "#2EA043" if trend == "UP" else "#F85149" if trend == "DOWN" else "#8B949E"
-                arrow = "▲" if trend == "UP" else "▼" if trend == "DOWN" else "●"
-                st.markdown(f"""
-                <div style="
-                    background: #161B22;
-                    border: 1px solid #30363D;
-                    border-radius: 10px;
-                    padding: 12px;
-                    text-align: center;
-                ">
-                    <div style="color: #8B949E; font-size: 11px;">{stock['ticker']}</div>
-                    <div style="font-size: 13px; font-weight: bold;">{stock['company_name']}</div>
-                    <div style="font-size: 20px; font-weight: bold;">${stock['price']:.2f}</div>
-                    <div style="color: {color};">{arrow} {stock['change_pct']:+.2f}%</div>
-                </div>
-                """, unsafe_allow_html=True)
-except Exception as e:
-    st.warning(f"No se pudieron cargar los stocks: {e}")
-
-st.divider()
-
-# ─────────────────────────────────────────
-# RESUMEN DE SENTIMIENTO
-# ─────────────────────────────────────────
-st.subheader("📰 Pulso económico del Mundial")
-
-try:
-    summaries = requests.get(f"{API_URL}/sentiment/summary", timeout=5).json()
-    cols = st.columns(len(summaries))
-    for i, s in enumerate(summaries):
-        with cols[i]:
-            icon = "🟢" if s["sentiment_label"] == "POSITIVE" else "🔴" if s["sentiment_label"] == "NEGATIVE" else "⚪"
-            color = "#2EA043" if s["sentiment_label"] == "POSITIVE" else "#F85149" if s["sentiment_label"] == "NEGATIVE" else "#8B949E"
-            st.markdown(f"""
-            <div style="
-                background: #161B22;
-                border: 1px solid #30363D;
-                border-radius: 10px;
-                padding: 12px;
-                text-align: center;
-            ">
-                <div style="font-size: 11px; color: #8B949E;">{s['category']}</div>
-                <div style="font-size: 24px;">{icon}</div>
-                <div style="color: {color}; font-weight: bold; font-size: 13px;">{s['sentiment_label']}</div>
-                <div style="font-size: 11px; color: #8B949E;">score: {s['avg_sentiment']:.2f}</div>
-                <div style="font-size: 11px; color: #8B949E;">{s['total_articles']} artículos</div>
-            </div>
-            """, unsafe_allow_html=True)
-except Exception as e:
-    st.warning(f"No se pudo cargar el sentimiento: {e}")
-
-st.divider()
-
-# ─────────────────────────────────────────
-# ÚLTIMOS PARTIDOS
-# ─────────────────────────────────────────
-st.subheader("⚽ Últimos resultados")
-
-try:
-    matches = requests.get(f"{API_URL}/matches?status=FINISHED", timeout=5).json()
-    recent = matches[-6:][::-1]  # Últimos 6 partidos
-
-    for match in recent:
-        col1, col2, col3 = st.columns([3, 1, 3])
-        with col1:
-            st.markdown(f"<div style='text-align:right; font-size:18px; font-weight:bold;'>{match['home_team']}</div>", unsafe_allow_html=True)
-        with col2:
-            st.markdown(f"<div style='text-align:center; font-size:20px; font-weight:bold; color:#E8C84A;'>{match['home_score']} - {match['away_score']}</div>", unsafe_allow_html=True)
-        with col3:
-            st.markdown(f"<div style='text-align:left; font-size:18px; font-weight:bold;'>{match['away_team']}</div>", unsafe_allow_html=True)
-
-except Exception as e:
-    st.warning(f"No se pudieron cargar los partidos: {e}")
 
 # ─────────────────────────────────────────
 # SIDEBAR
@@ -148,11 +149,13 @@ with st.sidebar:
     st.markdown("- 📈 Sponsors")
     st.markdown("- 📰 Sentimiento")
     st.markdown("- 🔬 Correlaciones")
+    st.markdown("- 🤖 Chatbot")
     st.markdown("---")
     st.markdown("### ⚙️ Estado del sistema")
     if st.button("🔄 Actualizar datos"):
         try:
             requests.post(f"{API_URL}/admin/sync", timeout=30)
+            st.cache_data.clear()
             st.success("Datos actualizados")
             st.rerun()
         except Exception:
