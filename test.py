@@ -1,4 +1,13 @@
 import requests
-r = requests.get("https://worldcup-economy-tracker.onrender.com/bracket", timeout=30)
-import json
-print(json.dumps(r.json(), indent=2, default=str))
+
+response = requests.get(
+    "https://api.football-data.org/v4/competitions/2000/matches",
+    headers={"X-Auth-Token": "3a079af75a7d4acb9f0b64b15c7ff2d5"}
+)
+matches = response.json().get("matches", [])
+
+for m in matches:
+    home = m.get("homeTeam", {}).get("name", "")
+    away = m.get("awayTeam", {}).get("name", "")
+    if "Ivory Coast" in [home, away] or "Norway" in [home, away]:
+        print(f"{home} vs {away} — status: {m.get('status')}")

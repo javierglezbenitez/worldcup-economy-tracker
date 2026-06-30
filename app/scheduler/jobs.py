@@ -33,8 +33,7 @@ def job_sync_live_data():
     db = SessionLocal()
     try:
         # Verificar si hay partidos en vivo
-        live_matches = db.query(Match).filter(Match.status == "LIVE").all()
-
+        live_matches = db.query(Match).filter(Match.status.in_(["LIVE", "IN_PLAY", "PAUSED"])).all()
         if not live_matches:
             logger.info("🔴 [JOB] Sin partidos en vivo, omitiendo sync de stocks")
             return

@@ -88,8 +88,9 @@ def get_matches(status: Optional[str] = None, db: Session = Depends(get_db)):
 
 @app.get("/matches/live", response_model=list[MatchResponse])
 def get_live_matches(db: Session = Depends(get_db)):
-    """Partidos en curso ahora mismo"""
-    return get_matches_from_db(db, status="LIVE")
+    """Partidos en curso ahora mismo (incluye descanso)"""
+    from app.models.database import Match
+    return db.query(Match).filter(Match.status.in_(["LIVE", "IN_PLAY", "PAUSED"])).all()
 
 
 @app.get("/matches/{match_id}", response_model=MatchWithEvents)

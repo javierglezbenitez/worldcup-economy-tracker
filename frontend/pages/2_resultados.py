@@ -49,8 +49,9 @@ def render_match(match: dict):
     a_score = match["away_score"]
     status = match["status"]
 
-    status_color = "#F85149" if status == "LIVE" else "#2EA043" if status == "FINISHED" else "#8B949E"
-    status_icon = "🔴" if status == "LIVE" else "✅" if status == "FINISHED" else "🕐"
+    status_color = "#F85149" if status in ["LIVE", "IN_PLAY",
+                                           "PAUSED"] else "#2EA043" if status == "FINISHED" else "#8B949E"
+    status_icon = "🔴" if status == "IN_PLAY" else "⏸️" if status == "PAUSED" else "✅" if status == "FINISHED" else "🕐"
 
     score_str = f"{h_score} - {a_score}" if h_score is not None else "vs"
 
@@ -106,15 +107,21 @@ def render_match(match: dict):
 # ─────────────────────────────────────────
 # TAB 1 — EN VIVO
 # ─────────────────────────────────────────
+# ─────────────────────────────────────────
+# TAB 1 — EN VIVO
+# ─────────────────────────────────────────
 with tab1:
-    live = load_matches("LIVE")
-    if not live:
+    in_play = load_matches("IN_PLAY")
+    paused = load_matches("PAUSED")
+    live_status = load_matches("LIVE")  # por si acaso la API lo usa en algún momento
+    all_live = in_play + paused + live_status
+
+    if not all_live:
         st.info("No hay partidos en vivo ahora mismo. ¡Vuelve cuando empiece el siguiente partido!")
     else:
-        st.markdown(f"### 🔴 {len(live)} partido(s) en vivo")
-        for match in live:
+        st.markdown(f"### 🔴 {len(all_live)} partido(s) en vivo")
+        for match in all_live:
             render_match(match)
-
 
 # ─────────────────────────────────────────
 # TAB 2 — FINALIZADOS
