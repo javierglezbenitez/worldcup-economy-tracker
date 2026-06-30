@@ -161,9 +161,12 @@ with col2:
 
 history = load_history(selected_ticker, hours)
 
-if not history:
-    st.info(f"Sin datos históricos suficientes para {selected_ticker}. "
-            f"Los datos se acumulan con el tiempo.")
+if not history or len(history) < 2:
+    st.info(
+        f"📊 Solo hay {len(history)} snapshot(s) registrado(s) para {selected_company} todavía. "
+        f"El histórico se construye automáticamente cada 30 minutos (cada 5 min durante partidos en vivo). "
+        f"Vuelve más tarde para ver la evolución completa."
+    )
 else:
     df_hist = pd.DataFrame(history)
     df_hist["timestamp_utc"] = pd.to_datetime(df_hist["timestamp_utc"])
@@ -177,8 +180,9 @@ else:
     fig_hist.add_trace(go.Scatter(
         x=df_hist["timestamp_utc"],
         y=df_hist["price"],
-        mode="lines",
+        mode="lines+markers",
         line=dict(color=line_color, width=2),
+        marker=dict(size=5),
         name=selected_ticker,
         fill="tozeroy",
         fillcolor=f"rgba({int(line_color[1:3], 16)}, "
