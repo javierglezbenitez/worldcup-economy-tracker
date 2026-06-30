@@ -3,7 +3,8 @@ import requests
 import plotly.express as px
 import pandas as pd
 
-API_URL = "http://127.0.0.1:8000"
+import streamlit as st
+API_URL = st.secrets.get("API_URL", "http://127.0.0.1:8000")
 
 st.set_page_config(
     page_title="Clasificaciones — World Cup Economy Tracker",
